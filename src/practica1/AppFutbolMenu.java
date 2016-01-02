@@ -1,5 +1,6 @@
 package practica1;
 
+import java.sql.SQLException;
 import java.util.Scanner;
 
 public class AppFutbolMenu {
@@ -8,8 +9,11 @@ public class AppFutbolMenu {
     static Boolean bucle = false;
     static int eleccion;
     static AppFutbol f = new AppFutbol();
+    static ConexionBD conn = null;
     
     public static void main(String[] args){
+    	
+    	EjecutarBD();
         
         do{
             
@@ -237,8 +241,13 @@ public class AppFutbolMenu {
                 case 22:
                 	Espacio();
                     
-                    System.out.println("Ha seleccionado: Cargar de MySQUL");
-                    f.CargarMySQL();
+                    System.out.println("Ha seleccionado: Cargar de MySQL");
+				try {
+					f.CargarMySQL();
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
                     
                     Espacio();
                     break;
@@ -246,7 +255,7 @@ public class AppFutbolMenu {
                 case 23:
                 	Espacio();
                     
-                    System.out.println("Ha seleccionado: Guardar a MySQUL");
+                    System.out.println("Ha seleccionado: Guardar a MySQL");
                     f.GuardarMySQL();
                     
                     Espacio();
@@ -256,6 +265,7 @@ public class AppFutbolMenu {
                     Espacio();
                     
                     System.out.println("Ha seleccionado: Salir");
+                    conn.cerrarconexion();
                     bucle=true;
                     
                     Espacio();
@@ -277,6 +287,14 @@ public class AppFutbolMenu {
     
     public static void Espacio(){
         System.out.println("");
+    }
+    
+    public static void EjecutarBD(){
+    	conn = ConexionBD.getInstancia();
+    }
+    
+    public static ConexionBD Conexion(){
+    	return conn;
     }
 }
 

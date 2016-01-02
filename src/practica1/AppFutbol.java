@@ -5,7 +5,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Scanner;
-import java.io.*;	
+import java.io.*;
+import java.sql.ResultSet;
+import java.sql.SQLException;	
 
 public class AppFutbol{
 	
@@ -1660,11 +1662,33 @@ public class AppFutbol{
 			}
 		}
 	}
-	public void CargarMySQL(){
-		
+	public void CargarMySQL() throws SQLException{
+		String sql = "SELECT * FROM PERSONAS";
+		ResultSet results = AppFutbolMenu.Conexion().ejecutarConsulta(sql);
+		while(results.next()){
+			System.out.println(results.getString("dni"));
+		}
 	}
 	public void GuardarMySQL(){
-		
+		String sql = "";
+		String dni, nombre, email, tlf;
+		int i = 0;
+		Iterator<Integer> it = null;
+		Integer key = null;
+		if(mJugador.isEmpty() == false){
+			it = mJugador.keySet().iterator();
+			while(it.hasNext()){
+				i++;
+				key = it.next();
+				dni = String.valueOf(mJugador.get(key).GetPersonaId());
+				nombre = String.valueOf(mJugador.get(key).GetPersonaNombre());
+				email = String.valueOf(mJugador.get(key).GetPersonaEmail());
+				tlf = String.valueOf(mJugador.get(key).GetPersonaTlf());
+				sql = "INSERT INTO PERSONAS (DNI, nombre, email, tlf) VALUES ('" 
+						+ dni + "', '" + nombre + "', '" + email + "', '" + tlf + "');";
+				AppFutbolMenu.Conexion().ejecutar(sql);
+			}
+		}
 	}
 	
 	//Métodos
