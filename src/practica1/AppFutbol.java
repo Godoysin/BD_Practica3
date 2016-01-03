@@ -1668,24 +1668,64 @@ public class AppFutbol{
 		while(results.next()){
 			System.out.println(results.getString("dni"));
 		}
+		sql = "SELECT * FROM JUGADOR";
+		results = AppFutbolMenu.Conexion().ejecutarConsulta(sql);
+		while(results.next()){
+			System.out.println(results.getString("salario"));
+		}
 	}
 	public void GuardarMySQL(){
 		String sql = "";
-		String dni, nombre, email, tlf;
-		int i = 0;
-		Iterator<Integer> it = null;
+		String nombre, email, tlf, posicion, direccion, ciudad;
+		int dni, salario, numero, equipo, tit, id, capacidad;
+		boolean titular;
+		Iterator<Integer> it = null, ith = null;
 		Integer key = null;
+		if(mEstadio.isEmpty() == false){
+			it = mEstadio.keySet().iterator();
+			while(it.hasNext()){
+				key = it.next();
+				id = Integer.valueOf(mEstadio.get(key).GetEstadioId());
+				direccion = String.valueOf(mEstadio.get(key).GetEstadioDireccion());
+				ciudad = String.valueOf(mEstadio.get(key).GetEstadioCiudad());
+				capacidad = Integer.valueOf(mEstadio.get(key).GetEstadioCapacidad());
+				sql = "INSERT INTO ESTADIO (id, dirección, ciudad, capacidad) VALUES (" 
+						+ id + ", '" + direccion + "', '" + ciudad + "', " + capacidad + ");";
+				AppFutbolMenu.Conexion().ejecutar(sql);
+			}
+		}
 		if(mJugador.isEmpty() == false){
 			it = mJugador.keySet().iterator();
 			while(it.hasNext()){
-				i++;
 				key = it.next();
-				dni = String.valueOf(mJugador.get(key).GetPersonaId());
+				dni = Integer.valueOf(mJugador.get(key).GetPersonaId());
 				nombre = String.valueOf(mJugador.get(key).GetPersonaNombre());
 				email = String.valueOf(mJugador.get(key).GetPersonaEmail());
 				tlf = String.valueOf(mJugador.get(key).GetPersonaTlf());
-				sql = "INSERT INTO PERSONAS (DNI, nombre, email, tlf) VALUES ('" 
-						+ dni + "', '" + nombre + "', '" + email + "', '" + tlf + "');";
+				salario = Integer.valueOf(mJugador.get(key).GetJugadorSalario());
+				posicion = String.valueOf(mJugador.get(key).GetJugadorPosicion());
+				titular = Boolean.valueOf(mJugador.get(key).GetJugadorTitular());
+				if(titular){
+					tit = 1;
+				}
+				else{
+					tit = 0;
+				}
+				numero = Integer.valueOf(mJugador.get(key).GetJugadorNumero());
+				ith = mEquipo.keySet().iterator();
+				equipo = -1;
+				while(ith.hasNext()){
+					key=ith.next();
+					if(mEquipo.get(key).GetEquipoJugador(dni) != null){
+						equipo = mEquipo.get(key).GetEquipoId();
+					}
+				}
+				sql = "INSERT INTO PERSONAS (DNI, nombre, email, tlf) VALUES (" 
+						+ dni + ", '" + nombre + "', '" + email + "', '" + tlf + "');";
+				AppFutbolMenu.Conexion().ejecutar(sql);
+				sql = "INSERT INTO JUGADOR (DNI, salario, posición, titular, numero, equipo) "
+						+ "VALUES (" + dni + ", " + salario + ", '" + posicion + "', " + 
+						tit + ", " + numero + ", " + equipo + ");";
 				AppFutbolMenu.Conexion().ejecutar(sql);
 			}
 		}

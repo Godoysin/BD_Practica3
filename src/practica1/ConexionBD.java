@@ -38,7 +38,7 @@ public class ConexionBD {
 		public Connection getConexion(){
 			Connection conexion = null;
 			try {
-				conexion = DriverManager.getConnection(URL_MYSQL,"user","password");
+				conexion = DriverManager.getConnection(URL_MYSQL,"root","password");
 			} catch (SQLException e) {
 				e.printStackTrace();
 			} 	
