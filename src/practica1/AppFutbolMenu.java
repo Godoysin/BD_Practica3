@@ -11,7 +11,7 @@ public class AppFutbolMenu {
     static AppFutbol f = new AppFutbol();
     static ConexionBD conn = null;
     
-    public static void main(String[] args){
+    public static void main(String[] args) throws SQLException{
     	
     	EjecutarBD();
         

@@ -21,20 +21,19 @@ public class AppFutbol{
 	public AppFutbol(){//Aquí se pueden cargar los datos o en un nuevo método
 		
 	}
-	public void AltaEquipo(){
+	public void AltaEquipo() throws SQLException{
 		//Declaraciones
-		Object key;
-		Iterator<Integer> it;
+		ResultSet results;
+		String sql;
 		int id, puntos;
 		Boolean bucle;
 		//Pido la id y busco que no esté repetida
 		do{
 			id = EquipoId();
+			results = ConsultaEquipo();
 			bucle = false;
-			it = mEquipo.keySet().iterator();
-			while(it.hasNext()){
-				key = it.next();
-				if(mEquipo.get(key).GetEquipoId() == id){
+			while(results.next()){
+				if(results.getInt("id") == id){
 					System.out.println("Ya hay un equipo con esa id");
 					bucle = true;
 				}
@@ -42,15 +41,11 @@ public class AppFutbol{
 		}while(bucle);
 		//Como no está repetido creo el nuevo Equipo
 		puntos = EquipoPuntos();
-		Equipo equipo = new Equipo(id, puntos);
-		mEquipo.put(id, equipo);
-		//Caso de error
-		if(id == -1 || puntos == -1){
-			System.out.println("Ha habido un error");
-			mEquipo.remove(id);
-		}
+		sql = "INSERT INTO EQUIPO (id, estadio, puntos) VALUES ("
+				+ id + ", " + null + ", " + puntos + ");";
+		AppFutbolMenu.Conexion().ejecutar(sql);
 	}
-	public void BajaEquipo(){
+	public void BajaEquipo() throws SQLException{
 		//Declaraciones
 		int id, borrar = 1;
 		String aux;
@@ -110,16 +105,15 @@ public class AppFutbol{
 			}
 		}
 	}
-	public void AltaJugador(){ //Se da de alta en un equipo y si no está en el sistema también
+	public void AltaJugador() throws SQLException{ //Se da de alta en un equipo y si no está en el sistema también
 		//Declaraciones
-		Jugador jugador = null;
-		Object key;
-		Iterator<Integer> it;
+		ResultSet results;
 		String nombre, email, tlf, posicion, aux;
 		int id, id2, salario, num;
 		Boolean bucle, titular, error, mostrar;
-		if(mEquipo.isEmpty()){
-			System.out.println("No hay equipos en el sistema");
+		results = ConsultaEquipo();
+		if(!results.next()){
+			System.out.println("No hay equipos en la base de datos");
 		}
 		else{
 			//Pido la id y busco que no esté repetida
@@ -129,11 +123,10 @@ public class AppFutbol{
 			do{
 				id = PersonaId();
 				bucle = false;
-				it = mJugador.keySet().iterator();
-				while(it.hasNext()){
-					key = it.next();
-					if(mJugador.get(key).GetPersonaId() == id){
-						System.out.println("Ya hay un jugador con esa id");
+				results = ConsultaPersonas();
+				while(results.next()){
+					if(results.getInt("DNI") == id){
+						System.out.println("Ya hay una persona con esa id");
 						bucle = true;
 					}
 				}
@@ -152,9 +145,9 @@ public class AppFutbol{
 				error = true;
 			}
 			else{
-				//Creo el jugador
-				Personas persona = new Personas(id, nombre, email, tlf);
-				jugador = new Jugador(persona, salario, posicion, titular, num);
+				//Añado al jugador primero a la tabla de personas y después a la de jugador
+				AddPersonas(id, nombre, email, tlf);
+				AddJugador(id, salario, posicion, titular, num, null);
 				//Doy la opcion de mostrar los equipos en los que meter al jugador
 				bucle = true;
 				try{
@@ -187,8 +180,6 @@ public class AppFutbol{
 				if(mostrar){
 					ListarEquipos();
 				}
-				//Meto al jugador en la base de datos y en un equipo
-				mJugador.put(id, jugador);
 				//Pido que meta al jugador en un equipo
 				bucle = true;
 				do{
@@ -197,11 +188,10 @@ public class AppFutbol{
 					if(id2 == -1){
 						bucle = false;
 					}
-					it = mEquipo.keySet().iterator();
-					while(it.hasNext()){
-						key = it.next();
-						if(mEquipo.get(key).GetEquipoId() == id2){
-							mEquipo.get(key).AltaJugador(jugador);
+					results = ConsultaEquipo();
+					while(results.next()){
+						if(results.getInt("id") == id2){
+							AddJugador(id, salario, posicion, titular, num, String.valueOf(id2));
 							bucle = false;
 						}
 					}
@@ -296,12 +286,9 @@ public class AppFutbol{
 			}
 		}
 	}
-	public void AltaArbitro(){
+	public void AltaArbitro() throws SQLException{
 		//Declaraciones
-		Arbitro arbitro;
-		Personas persona;
-		Object key;
-		Iterator<Integer> it;
+		ResultSet results;
 		int id;
 		String nombre, email, tlf, tipo;
 		Boolean bucle;
@@ -309,11 +296,10 @@ public class AppFutbol{
 		do{
 			id = PersonaId();
 			bucle = false;
-			it = mArbitro.keySet().iterator();
-			while(it.hasNext()){
-				key = it.next();
-				if(mArbitro.get(key).GetPersonaId() == id){
-					System.out.println("Ya hay un arbitro con esa id");
+			results = ConsultaPersonas();
+			while(results.next()){
+				if(results.getInt("DNI") == id){
+					System.out.println("Ya hay una persona con esa id");
 					bucle = true;
 				}
 			}
@@ -323,15 +309,9 @@ public class AppFutbol{
 		email = PersonaEmail();
 		tlf = PersonaTlf();
 		tipo = ArbitroTipo();
-		persona = new Personas(id, nombre, email, tlf);
-		arbitro = new Arbitro(persona, tipo);
-		mArbitro.put(id, arbitro);
-		//Caso de error
-		if(id == -1 || nombre.compareTo("-1") == 0 || email.compareTo("-1") == 0
-				|| tlf.compareTo("-1") == 0 || tipo.compareTo("-1") == 0){
-			System.out.println("Ha habido un error");
-			mArbitro.remove(id);
-		}
+		//Añade al arbitro primero a personas y después a albitro
+		AddPersonas(id, nombre, email, tlf);
+		AddArbitro(id, tipo);
 	}
 	public void BajaArbitro(){
 		//Declaraciones
@@ -394,16 +374,15 @@ public class AppFutbol{
 			}
 		}
 	}
-	public void AltaEstadio(){ //del sistema
+	public void AltaEstadio() throws SQLException{ //del sistema
 		//Declaraciones
-		Estadio estadio = null;
-		Object key;
-		Iterator<Integer> it;
+		ResultSet results;
 		int id, capacidad, id2;
 		String ciudad, direccion, aux;
 		Boolean bucle, error, mostrar;
-		if(mEquipo.isEmpty()){
-			System.out.println("No hay equipos en el sistema");
+		results = ConsultaEquipo();
+		if(!results.next()){
+			System.out.println("No hay equipos en la base de datos");
 		}
 		else{
 			//Pido la id y busco que la id no esté repetida
@@ -413,10 +392,9 @@ public class AppFutbol{
 			do{
 				id = EstadioId();
 				bucle = false;
-				it = mEstadio.keySet().iterator();
-				while(it.hasNext()){
-					key = it.next();
-					if(mEstadio.get(key).GetEstadioId() == id){
+				results = ConsultaEstadio();
+				while(results.next()){
+					if(results.getInt("id") == id){
 						System.out.println("Ya hay un estadio con esa id");
 						bucle = true;
 					}
@@ -432,8 +410,6 @@ public class AppFutbol{
 				error = true;
 			}
 			else{
-				//Creo el estadio
-				estadio = new Estadio(id, direccion, ciudad, capacidad);
 				//Doy la opcion de mostrar los equipos en los que meter al estadio
 				bucle = true;
 				try{
@@ -467,7 +443,7 @@ public class AppFutbol{
 					ListarEquipos();
 				}
 				//Meto al estadio en la base de datos y en un equipo
-				mEstadio.put(id, estadio);
+				AddEstadio(id, direccion, ciudad, capacidad);
 				//Pido que meta al jugador en un equipo
 				bucle = true;
 				do{
@@ -477,11 +453,10 @@ public class AppFutbol{
 						bucle = false;
 					}
 					//Lo añado a un equipo
-					it = mEquipo.keySet().iterator();
-					while(it.hasNext()){
-						key = it.next();
-						if(mEquipo.get(key).GetEquipoId() == id2){
-							mEquipo.get(key).AltaEstadio(estadio);
+					results = ConsultaEquipo();
+					while(results.next()){
+						if(results.getInt("id") == id2){
+							AddEquipo(results.getInt("id"), id, results.getInt("puntos"));
 							bucle = false;
 						}
 					}
@@ -492,7 +467,7 @@ public class AppFutbol{
 			}
 		}
 	}
-	public void AltaPartido(){
+	public void AltaPartido() throws SQLException{
 		//Declaraciones
 		Estadio estadio;
 		ArrayList<Arbitro> arbitro = new ArrayList<Arbitro>();
@@ -733,25 +708,36 @@ public class AppFutbol{
 			}
 		}
 	}
-	public void ListarEquipos(){
-		if(mEquipo.isEmpty()){
-			System.out.println("No hay equipos en el sistema");
+	public void ListarEquipos() throws SQLException{
+		ResultSet results;
+		results = ConsultaEquipo();
+		if(!results.next()){
+			System.out.println("No hay equipos en la base de datos");
 		}
 		else{
+			results = ConsultaEquipo();
 			System.out.println("Los equipos son:");
-			for (Entry<Integer, Equipo> equipo : mEquipo.entrySet()){
-				Equipo valor = equipo.getValue();
-				System.out.print("El equipo con id: " + valor.GetEquipoId());
-				System.out.println(" y puntuación de: " + valor.GetEquipoPuntos());
+			while(results.next()){
+				System.out.print("El equipo con id: " + results.getInt("id"));
+				System.out.println(" y puntuación de: " + results.getInt("puntos"));
 			}
 		}
 	}
-	public void ListarEstadios(){
-		if(mEstadio.isEmpty()){
-			System.out.println("No hay estadios en el sistema");
+	public void ListarEstadios() throws SQLException{
+		ResultSet results;
+		results = ConsultaEstadio();
+		if(!results.next()){
+			System.out.println("No hay estadios en la base de datos");
 		}
 		else{
 			System.out.println("Los estadios son:");
+			results = ConsultaEstadio();
+			while(results.next()){
+				System.out.print("El estadio con id: " + results.getInt("id"));
+				System.out.print(" que está en la ciudad de: " + results.getString("ciudad"));
+				System.out.print(" en la calle: " + results.getString("dirección"));
+				System.out.println(" y con capacidad para: " + results.getInt("capacidad"));
+			}
 			for (Entry<Integer, Estadio> estadio : mEstadio.entrySet()){
 				Estadio valor = estadio.getValue();
 				System.out.print("El estadio con id: " + valor.GetEstadioId());
@@ -810,7 +796,7 @@ public class AppFutbol{
 			}
 		}
 	}
-	public void ListarPartidosEquipo(){//Devuelve la info del partido dado un equipo
+	public void ListarPartidosEquipo() throws SQLException{//Devuelve la info del partido dado un equipo
 		//Declaraciones
 		int id, i;
 		Equipo equipo;
@@ -1676,11 +1662,12 @@ public class AppFutbol{
 	}
 	public void GuardarMySQL(){
 		String sql = "";
-		String nombre, email, tlf, posicion, direccion, ciudad;
-		int dni, salario, numero, equipo, tit, id, capacidad;
-		boolean titular;
+		String nombre, email, tlf, posicion, direccion, ciudad, tipo, fecha;
+		int dni, salario, numero, equipo, tit, id, capacidad, estadio, puntos, i, goles, j;
+		boolean titular, ida;
 		Iterator<Integer> it = null, ith = null;
 		Integer key = null;
+		//Almaceno los estadios en ESTADIO
 		if(mEstadio.isEmpty() == false){
 			it = mEstadio.keySet().iterator();
 			while(it.hasNext()){
@@ -1694,6 +1681,26 @@ public class AppFutbol{
 				AppFutbolMenu.Conexion().ejecutar(sql);
 			}
 		}
+		//Almaceno los equipos en EQUIPO
+		if(mEquipo.isEmpty() == false){
+			it = mEquipo.keySet().iterator();
+			while(it.hasNext()){
+				key = it.next();
+				id = Integer.valueOf(mEquipo.get(key).GetEquipoId());
+				puntos = Integer.valueOf(mEquipo.get(key).GetEquipoPuntos());
+				if(mEquipo.get(key).GetEquipoEstadio() == null){
+					sql = "INSERT INTO EQUIPO (id, estadio, puntos) VALUES ("
+							+ id + ", " + null + ", " + puntos + ");";
+				}
+				else{
+					estadio = Integer.valueOf(mEquipo.get(key).GetEquipoEstadio().GetEstadioId());
+					sql = "INSERT INTO EQUIPO (id, estadio, puntos) VALUES ("
+							+ id + ", " + estadio + ", " + puntos + ");";
+				}
+				AppFutbolMenu.Conexion().ejecutar(sql);
+			}
+		}
+		//Almaceno los jugadores en JUGADOR y PERSONAS
 		if(mJugador.isEmpty() == false){
 			it = mJugador.keySet().iterator();
 			while(it.hasNext()){
@@ -1727,6 +1734,92 @@ public class AppFutbol{
 						+ "VALUES (" + dni + ", " + salario + ", '" + posicion + "', " + 
 						tit + ", " + numero + ", " + equipo + ");";
 				AppFutbolMenu.Conexion().ejecutar(sql);
+			}
+		}
+		//Almaceno los arbitros en ARBITRO y PERSONAS
+		if(mArbitro.isEmpty() == false){
+			it = mArbitro.keySet().iterator();
+			while(it.hasNext()){
+				key = it.next();
+				dni = Integer.valueOf(mArbitro.get(key).GetPersonaId());
+				nombre = String.valueOf(mArbitro.get(key).GetPersonaNombre());
+				email = String.valueOf(mArbitro.get(key).GetPersonaEmail());
+				tlf = String.valueOf(mArbitro.get(key).GetPersonaTlf());
+				tipo = String.valueOf(mArbitro.get(key).GetArbitroTipo());
+				sql = "INSERT INTO PERSONAS (DNI, nombre, email, tlf) VALUES (" 
+						+ dni + ", '" + nombre + "', '" + email + "', '" + tlf + "');";
+				AppFutbolMenu.Conexion().ejecutar(sql);
+				sql = "INSERT INTO ARBITRO (DNI, tipo) VALUES (" + dni + ", '"+ tipo + "');";
+				AppFutbolMenu.Conexion().ejecutar(sql);
+			}
+		}
+		//Almaceno los partidos en PARTIDO
+		if(mPartido.isEmpty() == false){
+			for(i = 0; i < mPartido.size(); i++){
+				id = mPartido.get(i).GetPartidoId();
+				sql = "INSERT INTO PARTIDO (id, estadio, fecha, equipo1, equipo2, ida, goleseq1, goleseq2) VALUES (" + id;
+				if(mPartido.get(i).GetParidoEstadio() == null){
+					sql = sql + ", " + null;
+				}
+				else{
+					estadio = mPartido.get(i).GetParidoEstadio().GetEstadioId();
+					sql = sql + ", " + estadio;
+				}
+				fecha = mPartido.get(i).GetPartidoFecha().GetFechaasString();
+				sql = sql + ", '" + fecha;
+				if(mPartido.get(i).GetPartidoEquipo1() == null){
+					sql = sql + "', " + null;
+				}
+				else{
+					equipo = mPartido.get(i).GetPartidoEquipo1().GetEquipoId();
+					sql = sql + "', " + equipo;
+				}
+				if(mPartido.get(i).GetPartidoEquipo2() == null){
+					sql = sql + ", " + null;
+				}
+				else{
+					equipo = mPartido.get(i).GetPartidoEquipo2().GetEquipoId();
+					sql = sql + ", " + equipo;
+				}
+				ida = mPartido.get(i).GetPartidoIda();
+				if(ida){
+					sql = sql + ", " + 1;
+				}
+				else{
+					sql = sql + ", " + 0;
+				}
+				goles = mPartido.get(i).GetPartidoGolesEq1();
+				sql = sql + ", " + goles;
+				goles = mPartido.get(i).GetPartidoGolesEq2();
+				sql = sql + ", " + goles + ");";
+				AppFutbolMenu.Conexion().ejecutar(sql);
+			}
+		}
+		//Almaceno los jugadores que juegan un partido en JUGADORES_PARTIDO
+		if(mPartido.isEmpty() == false){
+			for(i = 0; i < mPartido.size(); i++){
+				id = mPartido.get(i).GetPartidoId();
+				for(j = 0; j < mPartido.get(i).GetPartidoEquipo1().GetEquipoJugadores().size(); j++){
+					dni = mPartido.get(i).GetPartidoEquipo1().GetEquipoJugadores().get(j).GetPersonaId();
+					sql = "INSERT INTO JUGADORES_PARTIDO (DNI, partido) VALUES (" + dni + ", " + id + ");";
+					AppFutbolMenu.Conexion().ejecutar(sql);
+				}
+				for(j = 0; j < mPartido.get(i).GetPartidoEquipo2().GetEquipoJugadores().size(); j++){
+					dni = mPartido.get(i).GetPartidoEquipo2().GetEquipoJugadores().get(j).GetPersonaId();
+					sql = "INSERT INTO JUGADORES_PARTIDO (DNI, partido) VALUES (" + dni + ", " + id + ");";
+					AppFutbolMenu.Conexion().ejecutar(sql);
+				}
+			}
+		}
+		//Almaceno los arbitros que arbitran un partido en ARBITROS_PARTIDO
+		if(mPartido.isEmpty() == false){
+			for(i = 0; i < mPartido.size(); i++){
+				id = mPartido.get(i).GetPartidoId();
+				for(j = 0; j < mPartido.get(i).GetPartidoArbitro().size(); j++){
+					dni = mPartido.get(i).GetPartidoArbitro().get(j).GetPersonaId();
+					sql = "INSERT INTO ARBITROS_PARTIDO (DNI, partido) VALUES (" + dni + ", " + id + ");";
+					AppFutbolMenu.Conexion().ejecutar(sql);
+				}
 			}
 		}
 	}
@@ -2096,5 +2189,138 @@ public class AppFutbol{
 			minuto = -1;
 		}
 		return minuto;
+	}
+	public void AddArbitro(int dni, String tipo){
+		String sql;
+		sql = "INSERT INTO ARBITRO (DNI, tipo) VALUES (" + dni + ", '"+ tipo + "');";
+		AppFutbolMenu.Conexion().ejecutar(sql);
+	}
+	public void AddArbitros_partido(int dni, int id){
+		String sql;
+		sql = "INSERT INTO ARBITROS_PARTIDO (DNI, partido) VALUES (" + dni + ", " + id + ");";
+		AppFutbolMenu.Conexion().ejecutar(sql);
+	}
+	public void AddEquipo(int id, int estadio, int puntos) throws SQLException{
+		String sql;
+		boolean repetido = false;
+		ResultSet results;
+		results = ConsultaEquipo();
+		while(results.next()){
+			if(results.getInt("id") == id){
+				repetido = true;
+			}
+		}
+		if(repetido){
+			sql = "UPDATE EQUIPO SET estadio='" + estadio + "', puntos='" + puntos + "' WHERE id= " + id + ";";
+		}
+		else{
+			sql = "INSERT INTO EQUIPO (id, estadio, puntos) VALUES ("
+					+ id + ", " + estadio + ", " + puntos + ");";
+		}
+		AppFutbolMenu.Conexion().ejecutar(sql);
+	}
+	public void AddEstadio(int id, String direccion, String ciudad, int capacidad){
+		String sql;
+		sql = "INSERT INTO ESTADIO (id, dirección, ciudad, capacidad) VALUES (" 
+			+ id + ", '" + direccion + "', '" + ciudad + "', " + capacidad + ");";
+		AppFutbolMenu.Conexion().ejecutar(sql);
+	}
+	public void AddJugador(int dni, int salario, String posicion, boolean titular, int numero, String equipo) throws SQLException{
+		ResultSet results;
+		String sql = "", fin = "";
+		boolean repetido = false, insert = true;
+		int tit;
+		if(titular){
+			tit = 1;
+		}
+		else{
+			tit = 0;
+		}
+		results = ConsultaJugador();
+		while(results.next()){
+			if(results.getInt("DNI") == dni){
+				repetido = true;
+			}
+		}
+		if(repetido){
+			sql = "UPDATE JUGADOR SET salario='" + salario + "', posición='" + posicion 
+					+ "', titular='" + tit + "', numero='" + numero + "', equipo='";
+			insert = false;
+		}
+		else{
+			sql = "INSERT INTO JUGADOR (DNI, salario, posición, titular, numero, equipo) "
+					+ "VALUES (" + dni + ", " + salario + ", '" + posicion + "', " + 
+					tit + ", " + numero + ", ";
+		}
+		if(equipo == null){
+			sql = sql + equipo;
+		}
+		else{
+			sql = sql + Integer.valueOf(equipo);
+		}
+		if(insert){
+			fin = ");";
+		}
+		else{
+			fin = "' WHERE DNI= " + dni + ";";
+		}
+		sql = sql + fin;
+		AppFutbolMenu.Conexion().ejecutar(sql);
+	}
+	public void AddJugadores_partido(int dni, int id){
+		String sql;
+		sql = "INSERT INTO JUGADORES_PARTIDO (DNI, partido) VALUES (" + dni + ", " + id + ");";
+		AppFutbolMenu.Conexion().ejecutar(sql);
+	}
+	public void AddPartido(int id, String fecha, int equipo1, int equipo2, boolean ida, int goleseq1, int goleseq2){
+		String sql;
+		int IDA;
+		if(ida){
+			IDA = 1;
+		}
+		else{
+			IDA = 0;
+		}
+		sql = "INSERT INTO PARTIDO (id, estadio, fecha, equipo1, equipo2, ida, goleseq1, goleseq2) VALUES (" 
+		+ id + ", " + fecha + ", " + equipo1 + ", " + equipo2 + ", " + IDA + ", " + goleseq1 + ", " + goleseq2 + ");";
+		AppFutbolMenu.Conexion().ejecutar(sql);
+	}
+	public void AddPersonas(int dni, String nombre, String email, String tlf){
+		String sql;
+		sql = "INSERT INTO PERSONAS (DNI, nombre, email, tlf) VALUES (" 
+				+ dni + ", '" + nombre + "', '" + email + "', '" + tlf + "');";
+		AppFutbolMenu.Conexion().ejecutar(sql);
+	}
+	public ResultSet ConsultaArbitro(){
+		String sql = "SELECT * FROM ARBITRO";
+		return AppFutbolMenu.Conexion().ejecutarConsulta(sql);
+	}
+	public ResultSet ConsultaArbitros_partido(){
+		String sql = "SELECT * FROM ARBITROS_PARTIDOS";
+		return AppFutbolMenu.Conexion().ejecutarConsulta(sql);
+	}
+	public ResultSet ConsultaEquipo(){
+		String sql = "SELECT * FROM EQUIPO";
+		return AppFutbolMenu.Conexion().ejecutarConsulta(sql);
+	}
+	public ResultSet ConsultaEstadio(){
+		String sql = "SELECT * FROM ESTADIO";
+		return AppFutbolMenu.Conexion().ejecutarConsulta(sql);
+	}
+	public ResultSet ConsultaJugador(){
+		String sql = "SELECT * FROM JUGADOR";
+		return AppFutbolMenu.Conexion().ejecutarConsulta(sql);
+	}
+	public ResultSet ConsultaJugadores_partido(){
+		String sql = "SELECT * FROM JUGADORES_PARTIDOS";
+		return AppFutbolMenu.Conexion().ejecutarConsulta(sql);
+	}
+	public ResultSet ConsultaPartido(){
+		String sql = "SELECT * FROM PARTIDO";
+		return AppFutbolMenu.Conexion().ejecutarConsulta(sql);
+	}
+	public ResultSet ConsultaPersonas(){
+		String sql = "SELECT * FROM PERSONAS";
+		return AppFutbolMenu.Conexion().ejecutarConsulta(sql);
 	}
 }

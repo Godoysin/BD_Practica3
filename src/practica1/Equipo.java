@@ -53,6 +53,10 @@ public class Equipo{
         return jugador;
     }
     
+    public ArrayList<Jugador> GetEquipoJugadores(){
+    	return ejugador;
+    }
+    
     //public int EquipoId(){
     //    int id;
     //    

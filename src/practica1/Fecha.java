@@ -4,12 +4,13 @@ import java.util.*;
 import java.text.*;
 
 public class Fecha{
-    SimpleDateFormat fformat = new SimpleDateFormat("dd/MMM/yyyy HH:mm");
+    SimpleDateFormat fformat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     private int fanio;
     private int fmes;
     private int fdia;
     private int fhora;
     private int fminuto;
+    private int fsegundo = 00;
     private Calendar ffecha = new GregorianCalendar();
     
     public Fecha(int anio, int mes, int dia, int hora, int minuto){
@@ -37,5 +38,9 @@ public class Fecha{
     }
     public int GetFechaMinuto(){
     	return fminuto;
+    }
+    public String GetFechaasString(){
+    	ffecha.set(fanio, fmes, fdia, fhora, fminuto, fsegundo);
+    	return fformat.format(ffecha.getTime());
     }
 }
