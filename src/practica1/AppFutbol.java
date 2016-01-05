@@ -469,13 +469,14 @@ public class AppFutbol{
 	}
 	public void AltaPartido() throws SQLException{
 		//Declaraciones
+		ResultSet results;
 		Estadio estadio;
 		ArrayList<Arbitro> arbitro = new ArrayList<Arbitro>();
 		ArrayList<Jugador> jugador1, jugador2;
 		Equipo equipo1, equipo2;
 		Boolean bucle, ida, aniadir, repetido;
 		String aux;
-		int ocurrencias, id, i, idequipo, idestadio, golesEq1, golesEq2, idarbitro, anio, mes, dia, hora, minuto;
+		int ocurrencias, id, i, idequipo, idestadio, golesEq1, golesEq2, idarbitro, anio, mes, dia, hora, minuto, segundo;
 		Iterator<Integer> it;
 		Object key;
 		estadio = null;
@@ -484,26 +485,28 @@ public class AppFutbol{
 		aniadir = ida = true;
 		jugador1 = jugador2 = null;
 		//Tengo equipos
-		if(mEquipo.isEmpty()){
-			System.out.println("No hay equipos en el sistema");
+		results = ConsultaEquipo();
+		if(!results.next()){
+			System.out.println("No hay equipos en la base de datos");
 		}
 		else{
 			//Tengo estadios
-			if(mEstadio.isEmpty()){
-				System.out.println("No hay estadios en el sistema");
+			results = ConsultaEstadio();
+			if(!results.next()){
+				System.out.println("No hay estadios en la base de datos");
 			}
 			else{
 				//Tengo arbitros
-				if(mArbitro.isEmpty()){
-					System.out.println("No hay arbitros en el sistema");
+				results = ConsultaArbitro();
+				if(!results.next()){
+					System.out.println("No hay arbitros en la base de datos");
 				}
 				else{
-					it = mEquipo.keySet().iterator();
-					while(it.hasNext()){
-						key = it.next();
-						if(mEquipo.get(key).ejugador.isEmpty() == false){
-							ocurrencias++;
-						}
+					ocurrencias = 0;
+					String sql = "SELECT DISTINCT equipo FROM JUGADOR;";
+					results = AppFutbolMenu.Conexion().ejecutarConsulta(sql);
+					while(results.next()){
+						ocurrencias++;
 					}
 					//Tengo dos o más equipos con jugadores
 					if(ocurrencias >= 2){
@@ -511,26 +514,35 @@ public class AppFutbol{
 						do{
 							bucle = false;
 							id = PartidoId();
-							for(i = 0; i < mPartido.size(); i++){
-								if(mPartido.get(i).GetPartidoId() == id){
+							results = ConsultaPartido();
+							while(results.next()){
+								if(results.getInt("id") == id){
 									System.out.println("Ya hay un partido con esa id");
 									bucle = true;
 								}
 							}
 						}while(bucle);
 						//Añado los equipos
-						it = mEquipo.keySet().iterator();
-						while(it.hasNext()){
-							key = it.next();
-							if(mEquipo.get(key).ejugador.isEmpty() == false){
-								System.out.println("El equipo con id: " + mEquipo.get(key).GetEquipoId()
-										+ " tiene jugadores");
-							}
+						sql = "SELECT DISTINCT equipo FROM JUGADOR;";
+						results = AppFutbolMenu.Conexion().ejecutarConsulta(sql);
+						while(results.next()){
+							System.out.println("El equipo con id: " + results.getInt("equipo")
+									+ " tiene jugadores");
 						}
 						do{
 							bucle = true;
 							System.out.println("Introduzca el primer equipo que juega el partido");
 							idequipo = EquipoId();
+							//TODO buscar equipo con jugadores y que coincida con idequipo
+							sql = "SELECT DISTINCT equipo FROM JUGADOR;";
+							results = AppFutbolMenu.Conexion().ejecutarConsulta(sql);
+							while(results.next()){
+								if(results.getInt("equipo") == idequipo){
+									equipo1 = idequipo;
+									bucle = false;
+								}
+							}
+							
 							it = mEquipo.keySet().iterator();
 							while(it.hasNext()){
 								key = it.next();
