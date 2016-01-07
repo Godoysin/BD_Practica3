@@ -470,20 +470,11 @@ public class AppFutbol{
 	public void AltaPartido() throws SQLException{
 		//Declaraciones
 		ResultSet results;
-		Estadio estadio;
-		ArrayList<Arbitro> arbitro = new ArrayList<Arbitro>();
-		ArrayList<Jugador> jugador1, jugador2;
-		Equipo equipo1, equipo2;
 		Boolean bucle, ida, aniadir, repetido;
 		String aux;
-		int ocurrencias, id, i, idequipo, idestadio, golesEq1, golesEq2, idarbitro, anio, mes, dia, hora, minuto, segundo;
-		Iterator<Integer> it;
-		Object key;
-		estadio = null;
-		equipo1 = equipo2 = null;
-		ocurrencias = id = golesEq1 = golesEq2 = 0;
+		int ocurrencias, id, idequipo, idestadio, golesEq1, golesEq2, idarbitro, anio, mes, dia, hora, minuto, equipo1, equipo2;
+		ocurrencias = id = golesEq1 = golesEq2 = equipo1 = equipo2 = 0;
 		aniadir = ida = true;
-		jugador1 = jugador2 = null;
 		//Tengo equipos
 		results = ConsultaEquipo();
 		if(!results.next()){
@@ -533,7 +524,6 @@ public class AppFutbol{
 							bucle = true;
 							System.out.println("Introduzca el primer equipo que juega el partido");
 							idequipo = EquipoId();
-							//TODO buscar equipo con jugadores y que coincida con idequipo
 							sql = "SELECT DISTINCT equipo FROM JUGADOR;";
 							results = AppFutbolMenu.Conexion().ejecutarConsulta(sql);
 							while(results.next()){
@@ -542,43 +532,37 @@ public class AppFutbol{
 									bucle = false;
 								}
 							}
-							
-							it = mEquipo.keySet().iterator();
-							while(it.hasNext()){
-								key = it.next();
-								if(mEquipo.get(key).ejugador.isEmpty() == false && mEquipo.get(key).GetEquipoId() == idequipo){
-									equipo1 = mEquipo.get(key);
-									bucle = false;
-								}
-							}
 						}while(bucle);
 						do{
 							bucle = true;
 							System.out.println("Introduzca el segundo equipo que juega el partido");
 							idequipo = EquipoId();
-							it = mEquipo.keySet().iterator();
-							while(it.hasNext()){
-								key = it.next();
-								if(mEquipo.get(key).ejugador.isEmpty() == false && mEquipo.get(key).GetEquipoId() == idequipo 
-										&& mEquipo.get(key) != equipo1){
-									equipo2 = mEquipo.get(key);
+							results = AppFutbolMenu.Conexion().ejecutarConsulta(sql);
+							while(results.next()){
+								if(results.getInt("equipo") == idequipo && equipo1 != idequipo){
+									equipo2 = idequipo;
 									bucle = false;
 								}
 							}
 						}while(bucle);
-						jugador1 = equipo1.ejugador;
-						jugador2 = equipo2.ejugador;
+						results = ConsultaJugador();
+						while(results.next()){
+							if(results.getInt("equipo") == equipo1){
+								AddJugadores_partido(results.getInt("DNI"), id);
+							}
+							if(results.getInt("equipo") == equipo2){
+								AddJugadores_partido(results.getInt("DNI"), id);
+							}
+						}
 						ListarEstadios();
 						do{
 							bucle = true;
 							System.out.println("Introduzca el estadio donde se juega el partido");
 							idestadio = EstadioId();
-							it = mEstadio.keySet().iterator();
-							while(it.hasNext()){
-								key = it.next();
-								if(mEstadio.get(key).GetEstadioId() == idestadio){
+							results = ConsultaEstadio();
+							while(results.next()){
+								if(results.getInt("id") == idestadio){
 									bucle = false;
-									estadio = mEstadio.get(key);
 								}
 							}
 						}while(bucle);
@@ -593,12 +577,10 @@ public class AppFutbol{
 							bucle = true;
 							System.out.println("Introduzca los árbitros del partido");
 							idarbitro = PersonaId();
-							it = mArbitro.keySet().iterator();
-							while(it.hasNext()){
-								key = it.next();
-								if(mArbitro.get(key).GetPersonaId() == idarbitro){
-									arbitro.add(mArbitro.get(key));
-									bucle = false;
+							results = ConsultaArbitro();
+							while(results.next()){
+								if(results.getInt("dni") == idarbitro){
+									AddArbitros_partido(idarbitro, id);
 								}
 							}
 						}while(bucle);
@@ -623,20 +605,20 @@ public class AppFutbol{
 								do{
 									bucle = true;
 									idarbitro = PersonaId();
-									it = mArbitro.keySet().iterator();
-									while(it.hasNext()){
-										key = it.next();
-										if(mArbitro.get(key).GetPersonaId() == idarbitro){
+									results = ConsultaArbitro();
+									while(results.next()){
+										if(results.getInt("DNI") == idarbitro){
 											repetido = false;
-											for(i = 0; i < arbitro.size(); i++){
-												if(arbitro.get(i).GetPersonaId() == idarbitro){
+											ResultSet results2 = ConsultaArbitro();
+											while(results2.next()){
+												if(results2.getInt("DNI") == results.getInt("DNI")){
 													System.out.println("Ese árbitro ya está en el partido");
 													repetido = true;
 												}
 												bucle = false;
 											}
-											if(repetido == false){
-												arbitro.add(mArbitro.get(key));
+											if(!repetido){
+												AddArbitros_partido(idarbitro, id);
 											}
 										}
 									}
@@ -652,9 +634,7 @@ public class AppFutbol{
 					hora = FechaHora();
 					minuto = FechaMinuto();
 					Fecha fecha = new Fecha(anio, mes, dia, hora, minuto);
-					Partido partido = new Partido(id, estadio, fecha, equipo1, equipo2, ida,
-							arbitro, jugador1, jugador2, golesEq1, golesEq2);
-					mPartido.add(partido);
+					AddPartido(id, fecha.GetFechaasString(), equipo1, equipo2, ida, golesEq1, golesEq2);
 				}
 			}
 		}
@@ -848,11 +828,13 @@ public class AppFutbol{
 			}
 		}
 	}
-	public void ListarJugadores(){//dada una posición en el campo
+	public void ListarJugadores() throws SQLException{//dada una posición en el campo
 		//Declaraciones
 		String posicion;
-		if(mJugador.isEmpty()){
-			System.out.println("No hay jugadores en el sistema");
+		ResultSet results;
+		results = ConsultaJugador();
+		if(!results.next()){
+			System.out.println("No hay jugadores en la base de datos");
 		}
 		else{
 			System.out.println("Seleccione la posición");
@@ -862,6 +844,10 @@ public class AppFutbol{
 			}
 			else{
 				System.out.println("Los jugadores en la posición de " + posicion + " son:");
+				//TODO hacer una consulta sql que me devuelva solo los jugadores en una posicion concreta
+				while(results.next()){
+					
+				}
 				for (Entry<Integer, Jugador> jugador : mJugador.entrySet()){
 					Jugador valor = jugador.getValue();
 					if(valor.GetJugadorPosicion().compareTo(posicion) == 0){
