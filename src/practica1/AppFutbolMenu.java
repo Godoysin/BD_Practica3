@@ -1,6 +1,7 @@
 package practica1;
 
 import java.sql.SQLException;
+import java.text.ParseException;
 import java.util.Scanner;
 
 public class AppFutbolMenu {
@@ -11,7 +12,7 @@ public class AppFutbolMenu {
     static AppFutbol f = new AppFutbol();
     static ConexionBD conn = null;
     
-    public static void main(String[] args) throws SQLException{
+    public static void main(String[] args) throws SQLException, ParseException{
     	
     	EjecutarBD();
         

@@ -1,13 +1,15 @@
 package practica1;
 
+import java.util.Date;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map.Entry;
 import java.util.Scanner;
 import java.io.*;
 import java.sql.ResultSet;
-import java.sql.SQLException;	
+import java.sql.SQLException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;	
 
 public class AppFutbol{
 	
@@ -313,7 +315,7 @@ public class AppFutbol{
 		AddPersonas(id, nombre, email, tlf);
 		AddArbitro(id, tipo);
 	}
-	public void BajaArbitro(){
+	public void BajaArbitro() throws SQLException{
 		//Declaraciones
 		Boolean bucle, mostrar, error;
 		String aux;
@@ -467,13 +469,13 @@ public class AppFutbol{
 			}
 		}
 	}
-	public void AltaPartido() throws SQLException{
+	public void AltaPartido() throws SQLException, java.text.ParseException{
 		//Declaraciones
 		ResultSet results;
 		Boolean bucle, ida, aniadir, repetido;
 		String aux;
-		int ocurrencias, id, idequipo, idestadio, golesEq1, golesEq2, idarbitro, anio, mes, dia, hora, minuto, equipo1, equipo2;
-		ocurrencias = id = golesEq1 = golesEq2 = equipo1 = equipo2 = 0;
+		int ocurrencias, id, idequipo, idestadio, golesEq1, golesEq2, idarbitro, anio, mes, dia, equipo1, equipo2;
+		ocurrencias = id = golesEq1 = golesEq2 = equipo1 = equipo2 = idestadio = 0;
 		aniadir = ida = true;
 		//Tengo equipos
 		results = ConsultaEquipo();
@@ -544,16 +546,8 @@ public class AppFutbol{
 									bucle = false;
 								}
 							}
+							
 						}while(bucle);
-						results = ConsultaJugador();
-						while(results.next()){
-							if(results.getInt("equipo") == equipo1){
-								AddJugadores_partido(results.getInt("DNI"), id);
-							}
-							if(results.getInt("equipo") == equipo2){
-								AddJugadores_partido(results.getInt("DNI"), id);
-							}
-						}
 						ListarEstadios();
 						do{
 							bucle = true;
@@ -571,70 +565,80 @@ public class AppFutbol{
 						System.out.println("Equipo 2");
 						golesEq2 = PartidoGoles();
 						ida = PartidoIda();
-						//Añado un árbitro
-						ListarArbitros();
-						do{
-							bucle = true;
-							System.out.println("Introduzca los árbitros del partido");
-							idarbitro = PersonaId();
-							results = ConsultaArbitro();
-							while(results.next()){
-								if(results.getInt("dni") == idarbitro){
-									AddArbitros_partido(idarbitro, id);
-								}
-							}
-						}while(bucle);
-						//Doy la opción de añadir más
-						do{
-							do{
-								System.out.println("¿Quieres añadir otro árbitro? S/N");
-								aux = in.next();
-								if(aux.compareTo("S") == 0 || aux.compareTo("s") == 0){
-									aniadir = true;
-									bucle = false;
-								}
-								else if(aux.compareTo("N") == 0 || aux.compareTo("n") == 0){
-									aniadir = false;
-									bucle = false;
-								}
-								else{
-									System.out.println("Error");
-								}
-							}while(bucle);
-							if(aniadir){
-								do{
-									bucle = true;
-									idarbitro = PersonaId();
-									results = ConsultaArbitro();
-									while(results.next()){
-										if(results.getInt("DNI") == idarbitro){
-											repetido = false;
-											ResultSet results2 = ConsultaArbitro();
-											while(results2.next()){
-												if(results2.getInt("DNI") == results.getInt("DNI")){
-													System.out.println("Ese árbitro ya está en el partido");
-													repetido = true;
-												}
-												bucle = false;
-											}
-											if(!repetido){
-												AddArbitros_partido(idarbitro, id);
-											}
-										}
-									}
-								}while(bucle);
-							}
-						}while(aniadir);
 					}
 					//Introduzco la fecha
 					System.out.println("Introduzca la fecha del partido");
 					anio = FechaAnio();
 					mes = FechaMes();
 					dia = FechaDia();
-					hora = FechaHora();
-					minuto = FechaMinuto();
-					Fecha fecha = new Fecha(anio, mes, dia, hora, minuto);
-					AddPartido(id, fecha.GetFechaasString(), equipo1, equipo2, ida, golesEq1, golesEq2);
+					Fecha fecha = new Fecha(anio, mes, dia);
+					AddPartido(id, idestadio, fecha.GetFechaasString(), equipo1, equipo2, ida, golesEq1, golesEq2);
+					//TODO ¿?
+					results = ConsultaJugador();
+					while(results.next()){
+						if(results.getInt("equipo") == equipo1){
+							System.out.println(equipo1 + " " + results.getInt("DNI") + " " + id);
+							AddJugadores_partido(results.getInt("DNI"), id);
+						}
+						if(results.getInt("equipo") == equipo2){
+							System.out.println(equipo2 + " " + results.getInt("DNI") + " " + id);
+							AddJugadores_partido(results.getInt("DNI"), id);
+						}
+					}
+					//Añado un árbitro
+					ListarArbitros();
+					do{
+						bucle = true;
+						System.out.println("Introduzca los árbitros del partido");
+						idarbitro = PersonaId();
+						results = ConsultaArbitro();
+						while(results.next()){
+							if(results.getInt("dni") == idarbitro){
+								AddArbitros_partido(idarbitro, id);
+							}
+						}
+					}while(bucle);
+					//Doy la opción de añadir más
+					do{
+						do{
+							System.out.println("¿Quieres añadir otro árbitro? S/N");
+							aux = in.next();
+							if(aux.compareTo("S") == 0 || aux.compareTo("s") == 0){
+								aniadir = true;
+								bucle = false;
+							}
+							else if(aux.compareTo("N") == 0 || aux.compareTo("n") == 0){
+								aniadir = false;
+								bucle = false;
+							}
+							else{
+								System.out.println("Error");
+							}
+						}while(bucle);
+						if(aniadir){
+							do{
+								bucle = true;
+								idarbitro = PersonaId();
+								results = ConsultaArbitro();
+								while(results.next()){
+									if(results.getInt("DNI") == idarbitro){
+										repetido = false;
+										ResultSet results2 = ConsultaArbitro();
+										while(results2.next()){
+											if(results2.getInt("DNI") == results.getInt("DNI")){
+												System.out.println("Ese árbitro ya está en el partido");
+												repetido = true;
+											}
+											bucle = false;
+										}
+										if(!repetido){
+											AddArbitros_partido(idarbitro, id);
+										}
+									}
+								}
+							}while(bucle);
+						}
+					}while(aniadir);
 				}
 			}
 		}
@@ -730,107 +734,112 @@ public class AppFutbol{
 				System.out.print(" en la calle: " + results.getString("dirección"));
 				System.out.println(" y con capacidad para: " + results.getInt("capacidad"));
 			}
-			for (Entry<Integer, Estadio> estadio : mEstadio.entrySet()){
-				Estadio valor = estadio.getValue();
-				System.out.print("El estadio con id: " + valor.GetEstadioId());
-				System.out.print(" que está en la ciudad de: " + valor.GetEstadioCiudad());
-				System.out.print(" en la calle: " + valor.GetEstadioDireccion());
-				System.out.println(" y con capacidad para: " + valor.GetEstadioCapacidad());
-			}
 		}
 	}
-	public void ListarArbitros(){
-		if(mArbitro.isEmpty()){
-			System.out.println("No hay arbitros en el sistema");
+	public void ListarArbitros() throws SQLException{
+		ResultSet results;
+		String sql = "";
+		results = ConsultaArbitro();
+		if(!results.next()){
+			System.out.println("No hay arbitro en la base de datos");
 		}
 		else{
+			sql = "SELECT * FROM PERSONAS, ARBITRO WHERE PERSONAS.DNI=ARBITRO.DNI;";
+			results = AppFutbolMenu.Conexion().ejecutarConsulta(sql);
 			System.out.println("Los arbitros son:");
-			for (Entry<Integer, Arbitro> arbitro : mArbitro.entrySet()){
-				Arbitro valor = arbitro.getValue();
-				System.out.print("El arbitro con id: " + valor.GetPersonaId());
-				System.out.print(", de nombre: " + valor.GetPersonaNombre());
-				System.out.print(", con email: " + valor.GetPersonaEmail());
-				System.out.print(", con tlf: " + valor.GetPersonaTlf());
-				System.out.println(" es: " + valor.GetArbitroTipo());
+			while(results.next()){
+				System.out.print("El arbitro con id: " + results.getInt("DNI"));
+				System.out.print(", de nombre: " + results.getString("nombre"));
+				System.out.print(", con email: " + results.getString("email"));
+				System.out.print(", con tlf: " + results.getString("tlf"));
+				System.out.println(" es: " + results.getString("tipo"));
 			}
 		}
 	}
-	public void ContarPartidos(){
+	public void ContarPartidos() throws SQLException{
 		//Declaraciones
-		if(mPartido.isEmpty()){
-			System.out.println("No hay partidos en el sistema");
+		ResultSet results;
+		results = ConsultaPartido();
+		int i = 0;
+		if(!results.next()){
+			System.out.println("No hay partidos en la base de datos");
 		}
 		else{
-			System.out.println("Hay " + mPartido.size() + " partidos");
+			results = ConsultaPartido();
+			while(results.next()){
+				i++;
+			}
+			System.out.println("Hay " + i + " partidos");
 		}
 	}
-	public void ListarPartidos(){ //devuelve info del partido dada una fecha
+	public void ListarPartidos() throws SQLException{ //devuelve info del partido dada una fecha
 		//Declaraciones
-		int anio, mes, dia, i;
-		if(mPartido.isEmpty()){
-			System.out.println("No hay partidos en el sistema");
+		ResultSet results;
+		results = ConsultaPartido();
+		int anio, mes, dia;
+		if(!results.next()){
+			System.out.println("No hay partidos en la base de datos");
 		}
 		else{
+			results = ConsultaPartido();
 			System.out.println("Selecciona el día del que mirar los partidos");
 			anio = FechaAnio();
 			mes = FechaMes();
+			mes++;
 			dia = FechaDia();
-			for(i = 0; i < mPartido.size(); i++){
-				if(mPartido.get(i).GetPartidoFecha().GetFechaAnio() == anio 
-						&& mPartido.get(i).GetPartidoFecha().GetFechaMes() == mes
-						&& mPartido.get(i).GetPartidoFecha().GetFechaDia() == dia){
-					System.out.print("El partido con id: " + mPartido.get(i).GetPartidoId());
-					System.out.print(", en el que juegan los equipos con id: " + mPartido.get(i).GetPartidoEquipo1().GetEquipoId());
-					System.out.print(" y " + mPartido.get(i).GetPartidoEquipo2().GetEquipoId());
-					System.out.print(" se jugó ");
-					mPartido.get(i).GetPartidoFecha().GetFecha();
+			while(results.next()){
+				Date fecha = results.getDate("fecha");
+				if(fecha.toString().substring(0, 4).compareTo(String.valueOf(anio)) == 0
+						&& fecha.toString().substring(5, 7).compareTo(String.valueOf(mes)) == 0
+						&& fecha.toString().substring(8, 10).compareTo(String.valueOf(dia)) == 0){
+					System.out.print("El partido con id: " + results.getInt("id"));
+					System.out.print(", en el que juegan los equipos con id: " + results.getInt("equipo1"));
+					System.out.print(" y " + results.getInt("equipo2"));
+					System.out.print(" se jugó el ");
+					System.out.println(fecha);
 				}
 			}
 		}
 	}
 	public void ListarPartidosEquipo() throws SQLException{//Devuelve la info del partido dado un equipo
 		//Declaraciones
-		int id, i;
-		Equipo equipo;
+		ResultSet results;
+		results = ConsultaPartido();
+		String sql = "";
+		int id;
 		Boolean bucle;
-		Iterator<Integer> it;
-		Object key;
-		equipo = null;
-		if(mPartido.isEmpty()){
-			System.out.println("No hay partidos en el sistema");
+		if(!results.next()){
+			System.out.println("No hay partidos en la base de datos");
 		}
 		else{
 			ListarEquipos();
 			do{
 				bucle = true;
 				id = EquipoId();
-				it = mEquipo.keySet().iterator();
-				while(it.hasNext()){
-					key = it.next();
-					if(mEquipo.get(key).GetEquipoId() == id){
-						equipo = mEquipo.get(key);
+				results = ConsultaEquipo();
+				while(results.next()){
+					if(results.getInt("id") == id){
 						bucle = false;
 					}
 				}
 			}while(bucle);
-			for(i = 0; i < mPartido.size(); i++){
-				if(mPartido.get(i).GetPartidoEquipo1().GetEquipoId() == equipo.GetEquipoId()
-						|| mPartido.get(i).GetPartidoEquipo2().GetEquipoId() == equipo.GetEquipoId()){
-					System.out.print("El equipo con id: " + equipo.GetEquipoId());
-					System.out.print(", juega el partido con id: " + mPartido.get(i).GetPartidoId());
-					if(mPartido.get(i).GetPartidoEquipo1().GetEquipoId() == equipo.GetEquipoId()){
-						System.out.println(", marcó " + mPartido.get(i).GetPartidoGolesEq1() + " goles");
-					}
-					else{
-						System.out.println(", marcó " + mPartido.get(i).GetPartidoGolesEq2() + " goles");
-					}
+			sql = "SELECT * FROM PARTIDO WHERE equipo1=" + id + " OR equipo2=" + id + ";";
+			results = AppFutbolMenu.Conexion().ejecutarConsulta(sql);
+			while(results.next()){
+				System.out.print("El equipo con id: " + id);
+				System.out.print(", juega el partido con id: " + results.getInt("id"));
+				if(results.getInt("equipo1") == id){
+					System.out.println(", marcó " + results.getInt("goleseq1") + " goles");
+				}
+				else{
+					System.out.println(", marcó " + results.getInt("goleseq2") + " goles");
 				}
 			}
 		}
 	}
 	public void ListarJugadores() throws SQLException{//dada una posición en el campo
 		//Declaraciones
-		String posicion;
+		String posicion, sql = "";
 		ResultSet results;
 		results = ConsultaJugador();
 		if(!results.next()){
@@ -843,21 +852,18 @@ public class AppFutbol{
 				System.out.println("Ha habido un error");
 			}
 			else{
+				sql = "SELECT * FROM PERSONAS, JUGADOR WHERE PERSONAS.DNI=JUGADOR.DNI;";
+				results = AppFutbolMenu.Conexion().ejecutarConsulta(sql);
 				System.out.println("Los jugadores en la posición de " + posicion + " son:");
-				//TODO hacer una consulta sql que me devuelva solo los jugadores en una posicion concreta
 				while(results.next()){
-					
-				}
-				for (Entry<Integer, Jugador> jugador : mJugador.entrySet()){
-					Jugador valor = jugador.getValue();
-					if(valor.GetJugadorPosicion().compareTo(posicion) == 0){
-						System.out.print("El jugador con id: " + valor.GetPersonaId());
-						System.out.print(", de nombre: " + valor.GetPersonaNombre());
-						System.out.print(", con email: " + valor.GetPersonaEmail());
-						System.out.print(", con tlf: " + valor.GetPersonaTlf());
-						System.out.print(", gana: " + valor.GetJugadorSalario());
-						System.out.print(", tiene el número: " + valor.GetJugadorNumero());
-						if(valor.GetJugadorTitular()){
+					if(results.getString("posición").compareTo(posicion) == 0){
+						System.out.print("El jugador con id: " + results.getInt("DNI"));
+						System.out.print(", de nombre: " + results.getString("nombre"));
+						System.out.print(", con email: " + results.getString("email"));
+						System.out.print(", con tlf: " + results.getString("tlf"));
+						System.out.print(", gana: " + results.getInt("salario"));
+						System.out.print(", tiene el número: " + results.getInt("numero"));
+						if(results.getBoolean("titular")){
 							System.out.println(" y es titular");
 						}
 						else{
@@ -868,55 +874,54 @@ public class AppFutbol{
 			}
 		}
 	}
-	public void ListarJugadoresEquipo(){//dado un equipo
+	public void ListarJugadoresEquipo() throws SQLException{//dado un equipo
 		//Declaraciones
-		int id, i;
-		Boolean novacio = false, bucle = true;
-		Iterator<Integer> it;
-		Object key, elegido = null;
-		if(mEquipo.isEmpty()){
-			System.out.println("No hay equipos en el sistema");
+		ResultSet results;
+		results = ConsultaEquipo();
+		String sql;
+		int id;
+		Boolean novacio = true, bucle = true;
+		if(!results.next()){
+			System.out.println("No hay equipos en la base de datos");
 		}
 		else{
 			//Compruebo que los equipos tengan jugadores
-			it = mEquipo.keySet().iterator();
-			while(it.hasNext()){
-				key = it.next();
-				if(mEquipo.get(key).ejugador.isEmpty() == false){
-					novacio = true;
-				}
+			results = ConsultaJugador();
+			while(!results.next()){
+				novacio = false;
 			}
 			if(novacio){
+				ListarEquipos();
 				do{
 					System.out.println("Seleccione el equipo");
 					id = EquipoId();
 					if(id == -1){
 						System.out.println("Ha habido un error");
 					}
-					it = mEquipo.keySet().iterator();
-					while(it.hasNext()){
-						key = it.next();
-						if(mEquipo.get(key).GetEquipoId() == id){
+					results = ConsultaEquipo();
+					while(results.next()){
+						if(results.getInt("id") == id){
 							bucle = false;
-							elegido = key;
 						}
 					}
 				}while(bucle);
-				System.out.println("Los jugadores en el equipo de id: " + mEquipo.get(elegido).GetEquipoId() + " son:");
-				for(i = 0; i < mEquipo.get(elegido).ejugador.size(); i++){
-					System.out.print("El jugador con id: " + mEquipo.get(elegido).ejugador.get(i).GetPersonaId());
-					System.out.print(", de nombre: " + mEquipo.get(elegido).ejugador.get(i).GetPersonaNombre());
-					System.out.print(", con email: " + mEquipo.get(elegido).ejugador.get(i).GetPersonaEmail());
-					System.out.print(", con tlf: " + mEquipo.get(elegido).ejugador.get(i).GetPersonaEmail());
-					System.out.print(", gana: " + mEquipo.get(elegido).ejugador.get(i).GetJugadorSalario());
-					System.out.print(", tiene el número: " + mEquipo.get(elegido).ejugador.get(i).GetJugadorNumero());
-					System.out.print(", juega de: " + mEquipo.get(elegido).ejugador.get(i).GetJugadorPosicion());
-					if(mEquipo.get(elegido).ejugador.get(i).GetJugadorTitular()){
+				System.out.println("Los jugadores en el equipo de id: " + id + " son:");
+				sql = "SELECT * FROM PERSONAS, JUGADOR WHERE equipo=" + id + " AND PERSONAS.DNI=JUGADOR.DNI;";
+				results = AppFutbolMenu.Conexion().ejecutarConsulta(sql);
+				while(results.next()){
+					System.out.print("El jugador con id: " + results.getInt("DNI"));
+					System.out.print(", de nombre: " + results.getString("nombre"));
+					System.out.print(", con email: " + results.getString("email"));
+					System.out.print(", con tlf: " + results.getString("tlf"));
+					System.out.print(", gana: " + results.getInt("salario"));
+					System.out.print(", tiene el número: " + results.getInt("numero"));
+					System.out.print(", juega de: " + results.getString("posición"));
+					if(results.getBoolean("titular")){
 						System.out.println(" y es titular");
 					}
 					else{
 						System.out.println(" y no es titular");
-					}	
+					}
 				}
 			}
 		}
@@ -1066,10 +1071,6 @@ public class AppFutbol{
 					bwPar.write(String.valueOf(mPartido.get(i).GetPartidoFecha().GetFechaMes()));
 					bwPar.newLine();
 					bwPar.write(String.valueOf(mPartido.get(i).GetPartidoFecha().GetFechaDia()));
-					bwPar.newLine();
-					bwPar.write(String.valueOf(mPartido.get(i).GetPartidoFecha().GetFechaHora()));
-					bwPar.newLine();
-					bwPar.write(String.valueOf(mPartido.get(i).GetPartidoFecha().GetFechaMinuto()));
 					bwPar.newLine();
 					//Equipo1
 					bwPar.write(String.valueOf(mPartido.get(i).GetPartidoEquipo1().GetEquipoId()));
@@ -1241,7 +1242,7 @@ public class AppFutbol{
 	}
 	public void CargarDatos(){
 		//Declaraciones
-		int i, id, idestadio, capacidad, idequipo, puntos, salario, numero, idpartido, aux, anio, mes, dia, hora, minuto, golesEq1, golesEq2;
+		int i, id, idestadio, capacidad, idequipo, puntos, salario, numero, idpartido, aux, anio, mes, dia, golesEq1, golesEq2;
 		String direccion, ciudad, nombre, email, tlf, posicion, tipo;
 		Boolean titular, ida;
 		Partido partido;
@@ -1363,9 +1364,7 @@ public class AppFutbol{
 					anio = Integer.parseInt(brPar.readLine());
 					mes = Integer.parseInt(brPar.readLine());
 					dia = Integer.parseInt(brPar.readLine());
-					hora = Integer.parseInt(brPar.readLine());
-					minuto = Integer.parseInt(brPar.readLine());
-					fecha = new Fecha(anio, mes, dia, hora, minuto);
+					fecha = new Fecha(anio, mes, dia);
 					//Equipo1
 					idequipo = Integer.parseInt(brPar.readLine());
 					aux = Integer.parseInt(brPar.readLine());
@@ -1486,57 +1485,77 @@ public class AppFutbol{
 			System.out.println("Error de E/S");
 		}
 	}
-	public void CalcularCampeonTemporada(){
-		//int[] puntos, equipos;
-		int puntos[] = new int[mEquipo.size()]; 
-		int equipos[] = new int[mEquipo.size()];
+	public void CalcularCampeonTemporada() throws SQLException{
+		ResultSet results, resultshelp;
 		int i, j, aux, aux2;
+		results = ConsultaEquipo();
+		i = 0;
+		while(results.next()){
+			i++;
+		}
+		int puntos[] = new int[i]; 
+		int equipos[] = new int[i];
 		//Para calcular el campeon hay cojer todos los equipos, ver los puntos que tiene cada uno y añadir
 		//en función de si han ganado o empatado partidos.
-		if(mEquipo.isEmpty()){
-			System.out.println("No hay equipos en el sistema");
+		results = ConsultaEquipo();
+		if(!results.next()){
+			System.out.println("No hay equipos en la base de datos");
 		}
 		else{
 			//Cojer cada equipo y sus puntos
 			i = 0;
-			for (Entry<Integer, Equipo> equipo : mEquipo.entrySet()){
-				Equipo valor = equipo.getValue();
-				equipos[i] = valor.GetEquipoId();
-				puntos[i] = valor.GetEquipoPuntos();
+			results = ConsultaEquipo();
+			while(results.next()){
+				equipos[i] = results.getInt("id");
+				puntos[i] = results.getInt("puntos");
 				i++;
 			}
-			if(mPartido.isEmpty()){
+			results = ConsultaPartido();
+			if(!results.next()){
 				System.out.println("El campeón se ha calculado con los puntos indicados al crear el equipo");
-				System.out.println("No hay partidos en el sistema");
+				System.out.println("No hay partidos en la base de datos");
 			}
 			else{
 				//Calcular la ganancia de puntos de cada equipo
-				for(i = 0; i < mPartido.size(); i++){
-					if(mPartido.get(i).GetPartidoGolesEq1() > mPartido.get(i).GetPartidoGolesEq2()){
-						for(j = 0; j < equipos.length; j++){
-							if(equipos[j] == mPartido.get(i).GetPartidoEquipo1().GetEquipoId()){
-								puntos[j] += 3;
-							}
-						}
+				results = ConsultaPartido();
+				while(results.next()){
+					if(results.getInt("goleseq1") > results.getInt("goleseq2")){
+						 resultshelp = ConsultaEquipo();
+						 i = 0;
+						 while(resultshelp.next()){
+							 if(results.getInt("equipo1") == resultshelp.getInt("id")){
+								 puntos[i] += 3;
+							 }
+							 i++;
+						 }
 					}
-					if(mPartido.get(i).GetPartidoGolesEq1() < mPartido.get(i).GetPartidoGolesEq2()){
-						for(j = 0; j < equipos.length; j++){
-							if(equipos[j] == mPartido.get(i).GetPartidoEquipo2().GetEquipoId()){
-								puntos[j] += 3;
-							}
-						}
+					if(results.getInt("goleseq1") < results.getInt("goleseq2")){
+						 resultshelp = ConsultaEquipo();
+						 i = 0;
+						 while(resultshelp.next()){
+							 if(results.getInt("equipo2") == resultshelp.getInt("id")){
+								 puntos[i] += 3;
+							 }
+							 i++;
+						 }
 					}
-					if(mPartido.get(i).GetPartidoGolesEq1() == mPartido.get(i).GetPartidoGolesEq2()){
-						for(j = 0; j < equipos.length; j++){
-							if(equipos[j] == mPartido.get(i).GetPartidoEquipo1().GetEquipoId()){
-								puntos[j] += 1;
-							}
-						}
-						for(j = 0; j < equipos.length; j++){
-							if(equipos[j] == mPartido.get(i).GetPartidoEquipo2().GetEquipoId()){
-								puntos[j] += 1;
-							}
-						}
+					if(results.getInt("goleseq1") == results.getInt("goleseq2")){
+						resultshelp = ConsultaEquipo();
+						 i = 0;
+						 while(resultshelp.next()){
+							 if(results.getInt("equipo1") == resultshelp.getInt("id")){
+								 puntos[i] += 1;
+							 }
+							 i++;
+						 }
+						 resultshelp = ConsultaEquipo();
+						 i = 0;
+						 while(resultshelp.next()){
+							 if(results.getInt("equipo2") == resultshelp.getInt("id")){
+								 puntos[i] += 1;
+							 }
+							 i++;
+						 }
 					}
 				}
 			}
@@ -1568,80 +1587,102 @@ public class AppFutbol{
 			};
 		}
 	}
-	public void CalcularPosicionesEquipos(){
-		int puntos[] = new int[mEquipo.size()]; 
-		int equipos[] = new int[mEquipo.size()];
+	public void CalcularPosicionesEquipos() throws SQLException{
+		//Declaraciones
 		int i, j, aux, aux2;
+		ResultSet results, resultshelp;
+		results = ConsultaEquipo();
+		i = 0;
+		while(results.next()){
+			i++;
+		}
+		int puntos[] = new int[i]; 
+		int equipos[] = new int[i];
 		//Para calcular el campeon hay cojer todos los equipos, ver los puntos que tiene cada uno y añadir
 		//en función de si han ganado o empatado partidos.
-		if(mEquipo.isEmpty()){
-			System.out.println("No hay equipos en el sistema");
+		results = ConsultaEquipo();
+		if(!results.next()){
+			System.out.println("No hay equipos en la base de datos");
 		}
 		else{
 			//Cojer cada equipo y sus puntos
 			i = 0;
-			for (Entry<Integer, Equipo> equipo : mEquipo.entrySet()){
-				Equipo valor = equipo.getValue();
-				equipos[i] = valor.GetEquipoId();
-				puntos[i] = valor.GetEquipoPuntos();
+			results = ConsultaEquipo();
+			while(results.next()){
+				equipos[i] = results.getInt("id");
+				puntos[i] = results.getInt("puntos");
 				i++;
 			}
-			if(mPartido.isEmpty()){
+			results = ConsultaPartido();
+			if(!results.next()){
 				System.out.println("El campeón se ha calculado con los puntos indicados al crear el equipo");
-				System.out.println("No hay partidos en el sistema");
+				System.out.println("No hay partidos en la base de datos");
 			}
 			else{
 				//Calcular la ganancia de puntos de cada equipo
-				for(i = 0; i < mPartido.size(); i++){
-					if(mPartido.get(i).GetPartidoGolesEq1() > mPartido.get(i).GetPartidoGolesEq2()){
-						for(j = 0; j < equipos.length; j++){
-							if(equipos[j] == mPartido.get(i).GetPartidoEquipo1().GetEquipoId()){
-								puntos[j] += 3;
-							}
-						}
+				results = ConsultaPartido();
+				while(results.next()){
+					if(results.getInt("goleseq1") > results.getInt("goleseq2")){
+						 resultshelp = ConsultaEquipo();
+						 i = 0;
+						 while(resultshelp.next()){
+							 if(results.getInt("equipo1") == resultshelp.getInt("id")){
+								 puntos[i] += 3;
+							 }
+							 i++;
+						 }
 					}
-					if(mPartido.get(i).GetPartidoGolesEq1() < mPartido.get(i).GetPartidoGolesEq2()){
-						for(j = 0; j < equipos.length; j++){
-							if(equipos[j] == mPartido.get(i).GetPartidoEquipo2().GetEquipoId()){
-								puntos[j] += 3;
-							}
-						}
+					if(results.getInt("goleseq1") < results.getInt("goleseq2")){
+						 resultshelp = ConsultaEquipo();
+						 i = 0;
+						 while(resultshelp.next()){
+							 if(results.getInt("equipo2") == resultshelp.getInt("id")){
+								 puntos[i] += 3;
+							 }
+							 i++;
+						 }
 					}
-					if(mPartido.get(i).GetPartidoGolesEq1() == mPartido.get(i).GetPartidoGolesEq2()){
-						for(j = 0; j < equipos.length; j++){
-							if(equipos[j] == mPartido.get(i).GetPartidoEquipo1().GetEquipoId()){
-								puntos[j] += 1;
-							}
-						}
-						for(j = 0; j < equipos.length; j++){
-							if(equipos[j] == mPartido.get(i).GetPartidoEquipo2().GetEquipoId()){
-								puntos[j] += 1;
-							}
-						}
+					if(results.getInt("goleseq1") == results.getInt("goleseq2")){
+						resultshelp = ConsultaEquipo();
+						 i = 0;
+						 while(resultshelp.next()){
+							 if(results.getInt("equipo1") == resultshelp.getInt("id")){
+								 puntos[i] += 1;
+							 }
+							 i++;
+						 }
+						 resultshelp = ConsultaEquipo();
+						 i = 0;
+						 while(resultshelp.next()){
+							 if(results.getInt("equipo2") == resultshelp.getInt("id")){
+								 puntos[i] += 1;
+							 }
+							 i++;
+						 }
 					}
+				}	
+			}		
+		}
+		//Calcular el campeón
+		for(i = 0; i < puntos.length - 1; i++){
+			for(j = 0; j < puntos.length - i - 1; j++){
+				if(puntos[j+1] > puntos[j]){
+					aux = equipos[j+1];
+					aux2 = puntos[j+1];
+					equipos[j+1] = equipos[j];
+					puntos[j+1] = puntos[j];
+					equipos[j] = aux;
+					puntos[j] = aux2;
 				}
 			}
-			//Calcular el campeón
-			for(i = 0; i < puntos.length - 1; i++){
-				for(j = 0; j < puntos.length - i - 1; j++){
-					if(puntos[j+1] > puntos[j]){
-						aux = equipos[j+1];
-						aux2 = puntos[j+1];
-						equipos[j+1] = equipos[j];
-						puntos[j+1] = puntos[j];
-						equipos[j] = aux;
-						puntos[j] = aux2;
-					}
-				}
-			}
-			//Pinto los resultados
-			j = 1;
-			for(i = 0; i < puntos.length; i++){
-				System.out.println("El equipo con id " + equipos[i] + " queda en la posición: " + j + "º");
-				if((i + 1) != equipos.length){
-					if(puntos[i] > puntos[i+1]){
-						j++;
-					}
+		}
+		//Pinto los resultados
+		j = 1;
+		for(i = 0; i < puntos.length; i++){
+			System.out.println("El equipo con id " + equipos[i] + " queda en la posición: " + j + "º");
+			if((i + 1) != equipos.length){
+				if(puntos[i] > puntos[i+1]){
+					j++;
 				}
 			}
 		}
@@ -2270,7 +2311,7 @@ public class AppFutbol{
 		sql = "INSERT INTO JUGADORES_PARTIDO (DNI, partido) VALUES (" + dni + ", " + id + ");";
 		AppFutbolMenu.Conexion().ejecutar(sql);
 	}
-	public void AddPartido(int id, String fecha, int equipo1, int equipo2, boolean ida, int goleseq1, int goleseq2){
+	public void AddPartido(int id, int idestadio, String fech, int equipo1, int equipo2, boolean ida, int goleseq1, int goleseq2) throws java.text.ParseException{
 		String sql;
 		int IDA;
 		if(ida){
@@ -2279,8 +2320,16 @@ public class AppFutbol{
 		else{
 			IDA = 0;
 		}
+		DateFormat ft = new SimpleDateFormat("yyyy-MM-dd");
+		java.util.Date fecha = null; // crea objetos tipo util.Date y sql.Date
+		java.sql.Date fecha2 = null;
+		fecha = ft.parse(fech);
+		fecha2 = new java.sql.Date(fecha.getTime()); // convierte el util.Date en sql.Date
 		sql = "INSERT INTO PARTIDO (id, estadio, fecha, equipo1, equipo2, ida, goleseq1, goleseq2) VALUES (" 
-		+ id + ", " + fecha + ", " + equipo1 + ", " + equipo2 + ", " + IDA + ", " + goleseq1 + ", " + goleseq2 + ");";
+		+ id + ", " + idestadio + ", '" + fecha2.toString() + "', " + equipo1 + ", " + equipo2 + ", " + IDA + ", " + goleseq1 + ", " + goleseq2 + ");";
+		System.out.println(fecha.getTime());
+		System.out.println(fecha2);
+		System.out.println(fecha2.toString());
 		AppFutbolMenu.Conexion().ejecutar(sql);
 	}
 	public void AddPersonas(int dni, String nombre, String email, String tlf){
