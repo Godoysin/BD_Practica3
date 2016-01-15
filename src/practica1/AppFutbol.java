@@ -573,15 +573,12 @@ public class AppFutbol{
 					dia = FechaDia();
 					Fecha fecha = new Fecha(anio, mes, dia);
 					AddPartido(id, idestadio, fecha.GetFechaasString(), equipo1, equipo2, ida, golesEq1, golesEq2);
-					//TODO ¿?
 					results = ConsultaJugador();
 					while(results.next()){
 						if(results.getInt("equipo") == equipo1){
-							System.out.println(equipo1 + " " + results.getInt("DNI") + " " + id);
 							AddJugadores_partido(results.getInt("DNI"), id);
 						}
 						if(results.getInt("equipo") == equipo2){
-							System.out.println(equipo2 + " " + results.getInt("DNI") + " " + id);
 							AddJugadores_partido(results.getInt("DNI"), id);
 						}
 					}
@@ -595,11 +592,13 @@ public class AppFutbol{
 						while(results.next()){
 							if(results.getInt("dni") == idarbitro){
 								AddArbitros_partido(idarbitro, id);
+								bucle = false;
 							}
 						}
 					}while(bucle);
 					//Doy la opción de añadir más
 					do{
+						bucle = true;
 						do{
 							System.out.println("¿Quieres añadir otro árbitro? S/N");
 							aux = in.next();
@@ -623,16 +622,16 @@ public class AppFutbol{
 								while(results.next()){
 									if(results.getInt("DNI") == idarbitro){
 										repetido = false;
-										ResultSet results2 = ConsultaArbitro();
+										ResultSet results2 = ConsultaArbitros_partido();
 										while(results2.next()){
 											if(results2.getInt("DNI") == results.getInt("DNI")){
 												System.out.println("Ese árbitro ya está en el partido");
 												repetido = true;
 											}
-											bucle = false;
 										}
 										if(!repetido){
 											AddArbitros_partido(idarbitro, id);
+											bucle = false;
 										}
 									}
 								}
@@ -2311,7 +2310,7 @@ public class AppFutbol{
 		sql = "INSERT INTO JUGADORES_PARTIDO (DNI, partido) VALUES (" + dni + ", " + id + ");";
 		AppFutbolMenu.Conexion().ejecutar(sql);
 	}
-	public void AddPartido(int id, int idestadio, String fech, int equipo1, int equipo2, boolean ida, int goleseq1, int goleseq2) throws java.text.ParseException{
+	public void AddPartido(int id, int idestadio, String fecha, int equipo1, int equipo2, boolean ida, int goleseq1, int goleseq2) throws java.text.ParseException{
 		String sql;
 		int IDA;
 		if(ida){
@@ -2320,16 +2319,8 @@ public class AppFutbol{
 		else{
 			IDA = 0;
 		}
-		DateFormat ft = new SimpleDateFormat("yyyy-MM-dd");
-		java.util.Date fecha = null; // crea objetos tipo util.Date y sql.Date
-		java.sql.Date fecha2 = null;
-		fecha = ft.parse(fech);
-		fecha2 = new java.sql.Date(fecha.getTime()); // convierte el util.Date en sql.Date
 		sql = "INSERT INTO PARTIDO (id, estadio, fecha, equipo1, equipo2, ida, goleseq1, goleseq2) VALUES (" 
-		+ id + ", " + idestadio + ", '" + fecha2.toString() + "', " + equipo1 + ", " + equipo2 + ", " + IDA + ", " + goleseq1 + ", " + goleseq2 + ");";
-		System.out.println(fecha.getTime());
-		System.out.println(fecha2);
-		System.out.println(fecha2.toString());
+		+ id + ", " + idestadio + ", '" + fecha.toString() + "', " + equipo1 + ", " + equipo2 + ", " + IDA + ", " + goleseq1 + ", " + goleseq2 + ");";
 		AppFutbolMenu.Conexion().ejecutar(sql);
 	}
 	public void AddPersonas(int dni, String nombre, String email, String tlf){
@@ -2369,5 +2360,41 @@ public class AppFutbol{
 	public ResultSet ConsultaPersonas(){
 		String sql = "SELECT * FROM PERSONAS";
 		return AppFutbolMenu.Conexion().ejecutarConsulta(sql);
+	}
+	public void RemoveArbitro(int dni){
+		String sql = "DELETE FROM ARBITRO WHERE ARBITRO.DNI=" + dni + ";";
+		AppFutbolMenu.Conexion().ejecutar(sql);
+	}
+	public void RemoveArbitros_partido(int dni){
+		String sql = "DELETE FROM ARBITROS_PARTIDO WHERE ARBITROS_PARTIDO.DNI=" + dni + ";";
+		AppFutbolMenu.Conexion().ejecutar(sql);
+	}
+	public void RemoveArbitros_partido2(int id){
+		String sql = "DELETE FROM ARBITROS_PARTIDO WHERE ARBITROS_PARTIDO.ID=" + id + ";";
+		AppFutbolMenu.Conexion().ejecutar(sql);
+	}
+	public void RemoveEquipo(int id){
+		String sql = "DELETE FROM EQUIPO WHERE EQUIPO.ID=" + id + ";";
+		AppFutbolMenu.Conexion().ejecutar(sql);
+	}
+	public void RemoveJugador(int dni){
+		String sql = "DELETE FROM JUGADOR WHERE JUGADOR.DNI=" + dni + ";";
+		AppFutbolMenu.Conexion().ejecutar(sql);
+	}
+	public void RemoveJugadores_partido(int dni){
+		String sql = "DELETE FROM JUGADORES_PARTIDO WHERE JUGADORES_PARTIDO.DNI=" + dni + ";";
+		AppFutbolMenu.Conexion().ejecutar(sql);
+	}
+	public void RemoveJugadores_partido2(int id){
+		String sql = "DELETE FROM JUGADORES_PARTIDO WHERE JUGADORES_PARTIDO.ID=" + id + ";";
+		AppFutbolMenu.Conexion().ejecutar(sql);
+	}
+	public void RemovePartido(int id){
+		String sql = "DELETE FROM PARTIDO WHERE PARTIDO.ID=" + id + ";";
+		AppFutbolMenu.Conexion().ejecutar(sql);
+	}
+	public void RemovePersonas(int dni){
+		String sql = "DELETE FROM PERSONAS WHERE PERSONAS.DNI=" + dni + ";";
+		AppFutbolMenu.Conexion().ejecutar(sql);
 	}
 }
