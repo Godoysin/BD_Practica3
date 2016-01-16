@@ -8,8 +8,6 @@ import java.util.Scanner;
 import java.io.*;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;	
 
 public class AppFutbol{
 	
@@ -49,13 +47,13 @@ public class AppFutbol{
 	}
 	public void BajaEquipo() throws SQLException{
 		//Declaraciones
-		int id, borrar = 1;
-		String aux;
+		ResultSet results;
+		results = ConsultaEquipo();
+		int id;
+		String sql, aux;
 		Boolean bucle, mostrar, error;
-		Object key;
-		Iterator<Integer> it;
-		if(mEquipo.isEmpty()){
-			System.out.println("No hay equipos en el sistema");
+		if(!results.next()){
+			System.out.println("No hay equipos en la base de datos");
 		}
 		else{
 			//Doy la opción de que se le muestren los equipos que hay para que elija uno
@@ -94,16 +92,43 @@ public class AppFutbol{
 				bucle = true;
 				do{
 					id = EquipoId();
-					it = mEquipo.keySet().iterator();
-					while(it.hasNext()){
-						key = it.next();
-						if(mEquipo.get(key).GetEquipoId() == id){
+					results = ConsultaEquipo();
+					while(results.next()){
+						if(results.getInt("id") == id){
 							bucle = false;
-							borrar = id;
 						}
 					}
 				}while(bucle);
-				mEquipo.remove(borrar);
+				results = ConsultaJugador();
+				while(results.next()){
+					if(results.getInt("equipo") == id){
+						//Borrar equipo de jugador
+						sql = "UPDATE JUGADOR SET equipo=null WHERE JUGADOR.equipo =" + id + ";";
+						AppFutbolMenu.Conexion().ejecutar(sql);
+					}
+				}
+				results = ConsultaPartido();
+				while(results.next()){
+					if(results.getInt("equipo1") == id){
+						//Borrar equipo1 de partido
+						sql = "UPDATE PARTIDO SET equipo1=null WHERE PARTIDO.equipo1 =" + id + ";";
+						AppFutbolMenu.Conexion().ejecutar(sql);
+					}
+				}results = ConsultaPartido();
+				while(results.next()){
+					if(results.getInt("equipo2") == id){
+						//Borrar equipo2 de partido
+						sql = "UPDATE PARTIDO SET equipo2=null WHERE PARTIDO.equipo1 =" + id + ";";
+						AppFutbolMenu.Conexion().ejecutar(sql);
+					}
+				}
+				results = ConsultaEquipo();
+				while(results.next()){
+					if(results.getInt("id") == id){
+						//Borrar equipo
+						RemoveEquipo(id);
+					}
+				}
 			}
 		}
 	}
@@ -204,22 +229,20 @@ public class AppFutbol{
 			}
 		}
 	}
-	public void BajaJugador(){ // de un equipo, no del sistema
+	public void BajaJugador() throws SQLException{ // de un equipo, no del sistema
 		//Declaraciones
-		int i, id, borrar, ide;
+		ResultSet results;
+		results = ConsultaJugador();
+		int dni;
 		Boolean bucle, mostrar, error;
 		String aux;
-		Object key, borr;
-		Iterator<Integer> it;
-		if(mJugador.isEmpty()){
-			System.out.println("No hay jugadores en el sistema");
+		if(!results.next()){
+			System.out.println("No hay jugadores en la base de datos");
 		}
 		else{
 			//Doy la opción de que se le muestren los equipos que hay para que elija uno
 			bucle = mostrar = true;
 			error = false;
-			borrar = 0;
-			borr = null;
 			try{
 				do{
 					System.out.println("¿Desea que se le muestren los jugadores en el sistema? S/N");
@@ -247,44 +270,44 @@ public class AppFutbol{
 			else{
 				//Si quiere verlos
 				if(mostrar){
-					it = mEquipo.keySet().iterator();
-					while(it.hasNext()){
-						key = it.next();
-						System.out.print("En el equipo de id: " +mEquipo.get(key).GetEquipoId());
-						System.out.println(" están:");
-						for(i = 0; i < mEquipo.get(key).ejugador.size(); i++){
-							System.out.print("El jugador: " + mEquipo.get(key).ejugador.get(i).GetPersonaNombre());
-							System.out.println(" con id: " + mEquipo.get(key).ejugador.get(i).GetPersonaId());
-						}
+					results = ConsultaJugador();
+					System.out.println("Hay los siguientes jugadores:");
+					while(results.next()){			
+						System.out.println("El jugador con dni: " +results.getInt("dni"));
 					}
 				}
-				//Borro el equipo por id
+				//Elijo al jugador por dni
 				bucle = true;
 				do{
-					System.out.println("De qué equipo quieres borrar al jugador");
-					ide = EquipoId();
-					it = mEquipo.keySet().iterator();
-					while(it.hasNext()){
-						key = it.next();
-						if(mEquipo.get(key).GetEquipoId() == ide){
-							borr = key;
+					dni = PersonaId();
+					results = ConsultaJugador();
+					while(results.next()){
+						if(results.getInt("DNI") == dni){
 							bucle = false;
 						}
 					}
 				}while(bucle);
-				bucle = true;
-				do{
-					id = PersonaId();
-					it = mEquipo.keySet().iterator();
-					while(it.hasNext()){
-						key = it.next();
-						for(i = 0; i < mEquipo.get(borr).ejugador.size(); i++){
-							borrar = id;
-							bucle = false;
-						}
+				//Borro al jugador de jugadores_partido
+				results = ConsultaJugadores_partido();
+				while(results.next()){
+					if(results.getInt("DNI") == dni){
+						RemoveJugadores_partido(dni);
 					}
-				}while(bucle);
-				mEquipo.get(borr).BajaJugador(borrar);
+				}
+				//Borro al jugador
+				results = ConsultaJugador();
+				while(results.next()){
+					if(results.getInt("DNI") == dni){
+						RemoveJugador(dni);
+					}
+				}
+				//Borro al jugador de persona
+				results = ConsultaPersonas();
+				while(results.next()){
+					if(results.getInt("DNI") == dni){
+						RemovePersonas(dni);
+					}
+				}
 			}
 		}
 	}
@@ -317,14 +340,13 @@ public class AppFutbol{
 	}
 	public void BajaArbitro() throws SQLException{
 		//Declaraciones
+		ResultSet results;
+		results = ConsultaArbitro();
 		Boolean bucle, mostrar, error;
 		String aux;
-		int id, borrar;
-		Iterator<Integer> it;
-		Object key;
-		borrar = 0;
-		if(mArbitro.isEmpty()){
-			System.out.println("No hay arbitros en el sistema");
+		int dni;
+		if(!results.next()){
+			System.out.println("No hay arbitros en la base de datos");
 		}
 		else{
 			//Doy la opción de que se le muestren los equipos que hay para que elija uno
@@ -359,20 +381,38 @@ public class AppFutbol{
 				if(mostrar){
 					ListarArbitros();
 				}
-				//Borro el equipo por id
+				//Elijo el arbitro por dni
 				bucle = true;
 				do{
-					id = PersonaId();
-					it = mArbitro.keySet().iterator();
-					while(it.hasNext()){
-						key = it.next();
-						if(mArbitro.get(key).GetPersonaId() == id){
+					dni = PersonaId();
+					results = ConsultaArbitro();
+					while(results.next()){
+						if(results.getInt("DNI") == dni){
 							bucle = false;
-							borrar = id;
 						}
 					}
 				}while(bucle);
-				mArbitro.remove(borrar);
+				//Borro el arbitro de arbitros_partido
+				results = ConsultaArbitros_partido();
+				while(results.next()){
+					if(results.getInt("DNI") == dni){
+						RemoveArbitros_partido(dni);
+					}
+				}
+				//Borro el arbitro
+				results = ConsultaArbitro();
+				while(results.next()){
+					if(results.getInt("DNI") == dni){
+						RemoveArbitro(dni);
+					}
+				}
+				//Borro el arbitro de persona
+				results = ConsultaPersonas();
+				while(results.next()){
+					if(results.getInt("DNI") == dni){
+						RemovePersonas(dni);
+					}
+				}
 			}
 		}
 	}
@@ -642,20 +682,20 @@ public class AppFutbol{
 			}
 		}
 	}
-	public void BajaPartido(){
+	public void BajaPartido() throws SQLException{
 		//Declaraciones
+		ResultSet results;
+		results = ConsultaPartido();
 		Boolean bucle, mostrar, error;
 		String aux;
-		int id, i;
-		Partido borrar;
-		if(mPartido.isEmpty()){
-			System.out.println("No hay partidos en el sistema");
+		int id;
+		if(!results.next()){
+			System.out.println("No hay partidos en la base de datos");
 		}
 		else{
 			//Doy la opción de que se le muestren los equipos que hay para que elija uno
 			bucle = mostrar = true;
 			error = false;
-			borrar = null;
 			try{
 				do{
 					System.out.println("¿Desea que se le muestren los partidos en el sistema? S/N");
@@ -683,23 +723,43 @@ public class AppFutbol{
 			else{
 				//Si quiere verlos
 				if(mostrar){
-					for(i = 0; i < mPartido.size(); i++){
-						System.out.print("El partido con id: " + mPartido.get(i).GetPartidoId() + " que se jugó el: ");
-						mPartido.get(i).GetPartidoFecha().GetFecha();
+					results = ConsultaPartido();
+					while(results.next()){
+						System.out.println("El partido con id: " + results.getInt("id") + " que se jugó el: " + results.getDate("fecha"));
 					}
 				}
 				//Borro el equipo por id
 				bucle = true;
 				do{
 					id = PartidoId();
-					for(i = 0; i < mPartido.size(); i++){
-						if(mPartido.get(i).GetPartidoId() == id){
+					results = ConsultaPartido();
+					while(results.next()){
+						if(results.getInt("id") == id){
 							bucle = false;
-							borrar = mPartido.get(i);
 						}
 					}
 				}while(bucle);
-				mPartido.remove(borrar);
+				//Borro el partido de arbitros_partido
+				results = ConsultaArbitros_partido();
+				while(results.next()){
+					if(results.getInt("partido") == id){
+						RemoveArbitros_partido2(id);
+					}
+				}
+				//Borro el partido de jugadores_partido
+				results = ConsultaJugadores_partido();
+				while(results.next()){
+					if(results.getInt("partido") == id){
+						RemoveJugadores_partido2(id);
+					}
+				}
+				//Borro el partido
+				results = ConsultaPartido();
+				while(results.next()){
+					if(results.getInt("id") == id){
+						RemovePartido(id);
+					}
+				}
 			}
 		}
 	}
@@ -2334,7 +2394,7 @@ public class AppFutbol{
 		return AppFutbolMenu.Conexion().ejecutarConsulta(sql);
 	}
 	public ResultSet ConsultaArbitros_partido(){
-		String sql = "SELECT * FROM ARBITROS_PARTIDOS";
+		String sql = "SELECT * FROM ARBITROS_PARTIDO";
 		return AppFutbolMenu.Conexion().ejecutarConsulta(sql);
 	}
 	public ResultSet ConsultaEquipo(){
@@ -2350,7 +2410,7 @@ public class AppFutbol{
 		return AppFutbolMenu.Conexion().ejecutarConsulta(sql);
 	}
 	public ResultSet ConsultaJugadores_partido(){
-		String sql = "SELECT * FROM JUGADORES_PARTIDOS";
+		String sql = "SELECT * FROM JUGADORES_PARTIDO";
 		return AppFutbolMenu.Conexion().ejecutarConsulta(sql);
 	}
 	public ResultSet ConsultaPartido(){
@@ -2370,11 +2430,15 @@ public class AppFutbol{
 		AppFutbolMenu.Conexion().ejecutar(sql);
 	}
 	public void RemoveArbitros_partido2(int id){
-		String sql = "DELETE FROM ARBITROS_PARTIDO WHERE ARBITROS_PARTIDO.ID=" + id + ";";
+		String sql = "DELETE FROM ARBITROS_PARTIDO WHERE ARBITROS_PARTIDO.partido=" + id + ";";
 		AppFutbolMenu.Conexion().ejecutar(sql);
 	}
 	public void RemoveEquipo(int id){
 		String sql = "DELETE FROM EQUIPO WHERE EQUIPO.ID=" + id + ";";
+		AppFutbolMenu.Conexion().ejecutar(sql);
+	}
+	public void RemoveEstadio(int id){
+		String sql = "DELETE FROM ESTADIO WHERE ESTADIO.ID=" + id + ";";
 		AppFutbolMenu.Conexion().ejecutar(sql);
 	}
 	public void RemoveJugador(int dni){
@@ -2386,7 +2450,7 @@ public class AppFutbol{
 		AppFutbolMenu.Conexion().ejecutar(sql);
 	}
 	public void RemoveJugadores_partido2(int id){
-		String sql = "DELETE FROM JUGADORES_PARTIDO WHERE JUGADORES_PARTIDO.ID=" + id + ";";
+		String sql = "DELETE FROM JUGADORES_PARTIDO WHERE JUGADORES_PARTIDO.partido=" + id + ";";
 		AppFutbolMenu.Conexion().ejecutar(sql);
 	}
 	public void RemovePartido(int id){
